@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maze Food Collection Task</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #181c24;
+            --panel2: #202634;
+            --text: #e8edf7;
+            --muted: #9fb0cc;
+            --accent: #66d9ef;
+            --green: #2ecc71;
+            --blue: #4da3ff;
+            --food: #ffd54a;
+            --wall: #c8d1e0;
+            --danger: #ff7b7b;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+            overflow: auto;
+        }
+
+        #sidebar {
+            width: 360px;
+            min-width: 300px;
+            background: linear-gradient(180deg, var(--panel), var(--panel2));
+            border-right: 1px solid #2b3344;
+            padding: 16px;
+            overflow: auto;
+        }
+
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 22px;
+            letter-spacing: 0.2px;
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+
+        .group {
+            margin-bottom: 14px;
+            padding: 12px;
+            border: 1px solid #2c3447;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .group h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #dce6fa;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .row label {
+            font-size: 13px;
+            color: #d6def0;
+            line-height: 1.35;
+        }
+
+        .value {
+            font-size: 12px;
+            color: var(--accent);
+            min-width: 52px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"],
+        input[type="number"],
+        select {
+            width: 100%;
+        }
+
+        input[type="range"] {
+            accent-color: #78a9ff;
+        }
+
+        input[type="number"],
+        select {
+            background: #111722;
+            color: var(--text);
+            border: 1px solid #334059;
+            padding: 7px 8px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        button {
+            background: #2b6cff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        button.secondary {
+            background: #2a3142;
+            color: #dce6fa;
+            border: 1px solid #3d4964;
+        }
+
+        button:hover {
+            filter: brightness(1.06)
+        }
+
+        #topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid #293244;
+            background: #121722;
+            flex-wrap: wrap;
+        }
+
+        #hud {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            color: #dbe6ff;
+        }
+
+        .pill {
+            background: #1b2230;
+            border: 1px solid #323c52;
+            padding: 8px 10px;
+            border-radius: 999px;
+            line-height: 1;
+        }
+
+        .pill .k {
+            color: var(--muted);
+            margin-right: 6px;
+        }
+
+        #canvasWrap {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 0;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        canvas {
+            background: #0b0f16;
+            border: 1px solid #2c3447;
+            border-radius: 14px;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #legend {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            flex: none;
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .warn {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        @media (max-width: 1200px) {
+            #sidebar {
+                width: 300px;
+                min-width: 260px;
+            }
+        }
+
+        @media (max-width: 980px) {
+            body {
+                flex-direction: column;
+                min-height: 100dvh;
+            }
+
+            #sidebar {
+                width: 100%;
+                min-width: 0;
+                max-height: 42vh;
+                border-right: none;
+                border-bottom: 1px solid #2b3344;
+            }
+
+            #main {
+                min-height: 58vh;
+            }
+
+            #topbar {
+                padding: 8px 10px;
+            }
+
+            #canvasWrap {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar">
+        <h1>Maze Food Collection</h1>
+
+        <div class="group">
+            <h3>Blue distractor circles</h3>
+            <div class="row"><label>Total distractors (auto)</label>
+                <div class="value" id="blueTotalVal"></div>
+            </div>
+
+            <div class="row">
+                <label for="consistentCount">Consistent blue circles</label>
+                <input id="consistentCount" type="number" min="0" max="12" value="1" />
+            </div>
+
+            <div class="row">
+                <label for="delayCount">Delayed blue circles</label>
+                <input id="delayCount" type="number" min="0" max="12" value="0" />
+            </div>
+
+            <div class="row">
+                <label for="oppositeCount">Spatial opposite blue circles</label>
+                <input id="oppositeCount" type="number" min="0" max="12" value="0" />
+            </div>
+
+            <div class="row">
+                <label for="partialCount">Partially controlled blue circles</label>
+                <input id="partialCount" type="number" min="0" max="12" value="0" />
+            </div>
+
+            <div class="row"><label>Participant control in partial mode</label>
+                <div class="value" id="partialControlVal"></div>
+            </div>
+            <input id="partialControlPct" type="range" min="0" max="100" step="1" value="50" />
+        </div>
+
+        <div class="group">
+            <h3>Maze</h3>
+            <div class="row"><label>Maze width (cells)</label>
+                <div class="value" id="colsVal"></div>
+            </div>
+            <input id="cols" type="range" min="8" max="28" step="1" value="16" />
+
+            <div class="row"><label>Maze height (cells)</label>
+                <div class="value" id="rowsVal"></div>
+            </div>
+            <input id="rows" type="range" min="8" max="24" step="1" value="12" />
+
+            <div class="row"><label>Passage size / gap width</label>
+                <div class="value" id="cellSizeVal"></div>
+            </div>
+            <input id="cellSize" type="range" min="28" max="72" step="1" value="55" />
+
+            <div class="row"><label>Maze openness</label>
+                <div class="value" id="openVal"></div>
+            </div>
+            <input id="openness" type="range" min="0" max="100" step="1" value="26" />
+            <div class="warn">Lower openness = more turning and fewer shortcuts. Higher openness = easier movement and
+                more empty pathways.</div>
+        </div>
+
+        <div class="group">
+            <h3>Agents & timing</h3>
+            <div class="row"><label>Delay duration (ms)</label>
+                <div class="value" id="delayVal"></div>
+            </div>
+            <input id="delayMs" type="range" min="0" max="1000" step="10" value="200" />
+
+            <div class="row"><label>Spawn distance (blue from green)</label>
+                <div class="value" id="spawnVal"></div>
+            </div>
+            <input id="spawnDistance" type="range" min="0" max="100" step="1" value="55" />
+
+            <div class="row"><label>Move step per keypress (px)</label>
+                <div class="value" id="stepVal"></div>
+            </div>
+            <input id="stepPx" type="range" min="6" max="40" step="1" value="15" />
+
+        </div>
+
+        <div class="group">
+            <h3>Food</h3>
+            <div class="row"><label>Number of food dots</label>
+                <div class="value" id="foodVal"></div>
+            </div>
+            <input id="foodCount" type="range" min="5" max="80" step="1" value="20" />
+        </div>
+
+        <div class="group">
+            <h3>Controls</h3>
+            <div class="buttons">
+                <button id="regenBtn">New maze</button>
+                <button id="resetBtn" class="secondary">Reset agents & food</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="main">
+        <div id="canvasWrap">
+            <canvas id="game"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+
+        const els = {
+            cols: document.getElementById('cols'),
+            rows: document.getElementById('rows'),
+            cellSize: document.getElementById('cellSize'),
+            openness: document.getElementById('openness'),
+            delayMs: document.getElementById('delayMs'),
+            spawnDistance: document.getElementById('spawnDistance'),
+            stepPx: document.getElementById('stepPx'),
+            foodCount: document.getElementById('foodCount'),
+            consistentCount: document.getElementById('consistentCount'),
+            delayCount: document.getElementById('delayCount'),
+            oppositeCount: document.getElementById('oppositeCount'),
+            partialCount: document.getElementById('partialCount'),
+            partialControlPct: document.getElementById('partialControlPct'),
+            regenBtn: document.getElementById('regenBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            colsVal: document.getElementById('colsVal'),
+            rowsVal: document.getElementById('rowsVal'),
+            cellSizeVal: document.getElementById('cellSizeVal'),
+            openVal: document.getElementById('openVal'),
+            delayVal: document.getElementById('delayVal'),
+            spawnVal: document.getElementById('spawnVal'),
+            stepVal: document.getElementById('stepVal'),
+            foodVal: document.getElementById('foodVal'),
+            blueTotalVal: document.getElementById('blueTotalVal'),
+            partialControlVal: document.getElementById('partialControlVal'),
+        };
+
+        const COLORS = {
+            bg: '#0b0f16',
+            wall: '#c8d1e0',
+            gridSoft: 'rgba(255,255,255,0.03)',
+            green: '#2ecc71',
+            greenEdge: '#b6ffcf',
+            blue: '#4da3ff',
+            blueEdge: '#cfe3ff',
+            food: '#ffd54a',
+            text: '#d7e3ff'
+        };
+
+        const state = {
+            cols: 16,
+            rows: 12,
+            cellSize: 44,
+            wallThickness: 8,
+            openness: 26,
+            delayMs: 200,
+            spawnDistance: 55,
+            stepPx: 16,
+            agentRadius: 12,
+            foodCount: 20,
+            blueCount: 6,
+            partialControlPct: 50,
+
+            cells: [],
+            wallRects: [],
+            foodDots: [],
+            green: null,
+            blues: [],
+            blueModes: [],
+            collected: 0,
+            lastResizeTs: 0
+        };
+
+        function randInt(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+        function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+        function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
+
+        function syncValues() {
+            state.cols = +els.cols.value;
+            state.rows = +els.rows.value;
+            state.cellSize = +els.cellSize.value;
+            state.openness = +els.openness.value;
+            state.delayMs = +els.delayMs.value;
+            state.spawnDistance = +els.spawnDistance.value;
+            state.stepPx = +els.stepPx.value;
+            state.foodCount = +els.foodCount.value;
+            state.partialControlPct = +els.partialControlPct.value;
+            enforceCounts();
+
+            els.colsVal.textContent = state.cols;
+            els.rowsVal.textContent = state.rows;
+            els.cellSizeVal.textContent = state.cellSize + ' px';
+            els.openVal.textContent = state.openness + '%';
+            els.delayVal.textContent = state.delayMs + ' ms';
+            els.spawnVal.textContent = state.spawnDistance + '%';
+            els.stepVal.textContent = state.stepPx + ' px';
+            els.foodVal.textContent = state.foodCount;
+            els.blueTotalVal.textContent = state.blueCount;
+            els.partialControlVal.textContent = state.partialControlPct + '%';
+
+            resizeCanvas();
+            updateHUD();
+        }
+
+        function enforceCounts() {
+            let c = Math.max(0, +els.consistentCount.value || 0);
+            let d = Math.max(0, +els.delayCount.value || 0);
+            let o = Math.max(0, +els.oppositeCount.value || 0);
+            let p = Math.max(0, +els.partialCount.value || 0);
+            c = Math.floor(c);
+            d = Math.floor(d);
+            o = Math.floor(o);
+            p = Math.floor(p);
+            els.consistentCount.value = c;
+            els.delayCount.value = d;
+            els.oppositeCount.value = o;
+            els.partialCount.value = p;
+
+            state.blueCount = c + d + o + p;
+        }
+
+        function getBalancedModeCounts() {
+            let c = Math.max(0, +els.consistentCount.value || 0);
+            let d = Math.max(0, +els.delayCount.value || 0);
+            let o = Math.max(0, +els.oppositeCount.value || 0);
+            let p = Math.max(0, +els.partialCount.value || 0);
+            c = Math.floor(c);
+            d = Math.floor(d);
+            o = Math.floor(o);
+            p = Math.floor(p);
+            state.blueCount = c + d + o + p;
+            enforceCounts();
+            return { c, d, o, p };
+        }
+
+        function resizeCanvas() {
+            const wrap = document.getElementById('canvasWrap');
+            const pad = 32;
+            const maxW = Math.max(500, wrap.clientWidth - pad);
+            const maxH = Math.max(400, wrap.clientHeight - pad);
+
+            const wantedW = state.cols * state.cellSize + state.wallThickness;
+            const wantedH = state.rows * state.cellSize + state.wallThickness;
+
+            const scale = Math.min(maxW / wantedW, maxH / wantedH, 1);
+            canvas.width = Math.round(wantedW * scale);
+            canvas.height = Math.round(wantedH * scale);
+
+            state.renderScale = scale;
+            state.drawW = wantedW;
+            state.drawH = wantedH;
+        }
+
+        function makeCellGrid(cols, rows) {
+            const cells = [];
+            for (let y = 0; y < rows; y++) {
+                const row = [];
+                for (let x = 0; x < cols; x++) {
+                    row.push({
+                        x, y,
+                        visited: false,
+                        walls: { top: true, right: true, bottom: true, left: true }
+                    });
+                }
+                cells.push(row);
+            }
+            return cells;
+        }
+
+        function neighborsOf(cells, x, y) {
+            const rows = cells.length;
+            const cols = cells[0].length;
+            const n = [];
+            if (y > 0) n.push({ dir: 'top', nx: x, ny: y - 1, opp: 'bottom' });
+            if (x < cols - 1) n.push({ dir: 'right', nx: x + 1, ny: y, opp: 'left' });
+            if (y < rows - 1) n.push({ dir: 'bottom', nx: x, ny: y + 1, opp: 'top' });
+            if (x > 0) n.push({ dir: 'left', nx: x - 1, ny: y, opp: 'right' });
+            return n;
+        }
+
+        function generateMaze() {
+            state.cells = makeCellGrid(state.cols, state.rows);
+
+            const stack = [];
+            let current = state.cells[0][0];
+            current.visited = true;
+            stack.push(current);
+
+            while (stack.length) {
+                current = stack[stack.length - 1];
+                const nbs = neighborsOf(state.cells, current.x, current.y)
+                    .filter(n => !state.cells[n.ny][n.nx].visited);
+
+                if (nbs.length) {
+                    const pick = choice(nbs);
+                    current.walls[pick.dir] = false;
+                    state.cells[pick.ny][pick.nx].walls[pick.opp] = false;
+                    state.cells[pick.ny][pick.nx].visited = true;
+                    stack.push(state.cells[pick.ny][pick.nx]);
+                } else {
+                    stack.pop();
+                }
+            }
+
+            const opennessFactor = state.openness / 100;
+            const extraOpenings = Math.floor(state.cols * state.rows * opennessFactor * 1.35);
+
+            for (let i = 0; i < extraOpenings; i++) {
+                const x = randInt(0, state.cols - 1);
+                const y = randInt(0, state.rows - 1);
+                const dirs = neighborsOf(state.cells, x, y);
+                if (!dirs.length) continue;
+                const pick = choice(dirs);
+                state.cells[y][x].walls[pick.dir] = false;
+                state.cells[pick.ny][pick.nx].walls[pick.opp] = false;
+            }
+
+            buildWallRects();
+        }
+
+        function buildWallRects() {
+            const t = state.wallThickness;
+            const cs = state.cellSize;
+            const W = state.cols * cs + t;
+            const H = state.rows * cs + t;
+            const rects = [];
+
+            rects.push({ x: 0, y: 0, w: W, h: t });
+            rects.push({ x: 0, y: H - t, w: W, h: t });
+            rects.push({ x: 0, y: 0, w: t, h: H });
+            rects.push({ x: W - t, y: 0, w: t, h: H });
+
+            for (let y = 0; y < state.rows; y++) {
+                for (let x = 0; x < state.cols; x++) {
+                    const c = state.cells[y][x];
+                    const px = x * cs;
+                    const py = y * cs;
+
+                    if (c.walls.right && x < state.cols - 1) {
+                        rects.push({ x: px + cs, y: py, w: t, h: cs + t });
+                    }
+                    if (c.walls.bottom && y < state.rows - 1) {
+                        rects.push({ x: px, y: py + cs, w: cs + t, h: t });
+                    }
+                }
+            }
+
+            state.wallRects = mergeRects(rects);
+        }
+
+        function mergeRects(rects) {
+            return rects;
+        }
+
+        function cellCenter(cx, cy) {
+            const t = state.wallThickness;
+            const cs = state.cellSize;
+            return {
+                x: t / 2 + cx * cs + cs / 2,
+                y: t / 2 + cy * cs + cs / 2
+            };
+        }
+
+        function randomFreeCell(excludeCells = []) {
+            const blocked = new Set(excludeCells.map(p => `${p.x},${p.y}`));
+            let attempts = 0;
+            while (attempts < 10000) {
+                const x = randInt(0, state.cols - 1);
+                const y = randInt(0, state.rows - 1);
+                if (!blocked.has(`${x},${y}`)) return { x, y };
+                attempts++;
+            }
+            return { x: 0, y: 0 };
+        }
+
+        function minSpawnCellDistance() {
+            const maxDim = Math.max(state.cols, state.rows);
+            return Math.round((state.spawnDistance / 100) * (maxDim * 0.65));
+        }
+
+        function oppositeDir(dir) {
+            if (dir === 'left') return 'right';
+            if (dir === 'right') return 'left';
+            if (dir === 'top') return 'bottom';
+            return 'top';
+        }
+
+        function buildControlPath(startCell, steps) {
+            const path = [];
+            let cur = { x: startCell.x, y: startCell.y };
+            for (let i = 0; i < steps; i++) {
+                const possible = neighborsOf(state.cells, cur.x, cur.y)
+                    .filter(n => !state.cells[cur.y][cur.x].walls[n.dir]);
+                if (!possible.length) break;
+                const pick = choice(possible);
+                path.push(pick.dir);
+                cur = { x: pick.nx, y: pick.ny };
+            }
+            return path;
+        }
+
+        function canFollowPathFromCell(startCell, pathDirs) {
+            let cx = startCell.x;
+            let cy = startCell.y;
+            for (const dir of pathDirs) {
+                const options = neighborsOf(state.cells, cx, cy);
+                const edge = options.find(n => n.dir === dir);
+                if (!edge) return false;
+                if (state.cells[cy][cx].walls[dir]) return false;
+                cx = edge.nx;
+                cy = edge.ny;
+            }
+            return true;
+        }
+
+        function buildModeAdjustedPath(mode, basePath) {
+            if (mode !== 'opposite') return basePath;
+            return basePath.map(oppositeDir);
+        }
+
+        function resetAgentsAndFoods() {
+            const counts = getBalancedModeCounts();
+
+            const used = [];
+            const greenCell = randomFreeCell(used);
+            used.push(greenCell);
+            const greenPos = cellCenter(greenCell.x, greenCell.y);
+            state.green = {
+                x: greenPos.x,
+                y: greenPos.y,
+                r: state.agentRadius,
+                color: COLORS.green
+            };
+
+            const modeList = [];
+            for (let i = 0; i < counts.c; i++) modeList.push('consistent');
+            for (let i = 0; i < counts.d; i++) modeList.push('delay');
+            for (let i = 0; i < counts.o; i++) modeList.push('opposite');
+            for (let i = 0; i < counts.p; i++) modeList.push('partial');
+
+            shuffle(modeList);
+            state.blueModes = modeList;
+            state.blues = [];
+
+            const minCellDist = minSpawnCellDistance();
+            const alignSteps = randInt(5, 6);
+            const sharedControlPath = buildControlPath(greenCell, alignSteps);
+
+            for (let i = 0; i < state.blueCount; i++) {
+                let chosen = null;
+                const requiredPath = buildModeAdjustedPath(modeList[i], sharedControlPath);
+                let tries = 0;
+                while (tries < 4000) {
+                    const c = randomFreeCell(used);
+                    const d = Math.abs(c.x - greenCell.x) + Math.abs(c.y - greenCell.y);
+                    const pathOk = requiredPath.length === 0 || canFollowPathFromCell(c, requiredPath);
+                    if ((d >= minCellDist || tries > 2500) && pathOk) {
+                        chosen = c;
+                        break;
+                    }
+                    tries++;
+                }
+                if (!chosen && requiredPath.length) {
+                    let fallbackTries = 0;
+                    while (fallbackTries < 4000) {
+                        const c = randomFreeCell(used);
+                        if (canFollowPathFromCell(c, requiredPath)) {
+                            chosen = c;
+                            break;
+                        }
+                        fallbackTries++;
+                    }
+                }
+                if (!chosen) chosen = randomFreeCell(used);
+                used.push(chosen);
+                const p = cellCenter(chosen.x, chosen.y);
+                state.blues.push({
+                    x: p.x,
+                    y: p.y,
+                    r: state.agentRadius,
+                    mode: modeList[i],
+                    pending: [],
+                    randomDir: null,
+                    randomDirHold: 0,
+                    color: COLORS.blue
+                });
+            }
+
+            state.foodDots = [];
+            state.collected = 0;
+
+            const foodUsed = new Set();
+            foodUsed.add(`${greenCell.x},${greenCell.y}`);
+            used.forEach(c => foodUsed.add(`${c.x},${c.y}`));
+
+            let tries = 0;
+            while (state.foodDots.length < state.foodCount && tries < 20000) {
+                const c = randomFreeCell([]);
+                const key = `${c.x},${c.y}`;
+                if (foodUsed.has(key)) { tries++; continue; }
+
+                const center = cellCenter(c.x, c.y);
+                const jitter = Math.max(0, (state.cellSize * 0.18) - state.agentRadius * 0.25);
+                const fx = center.x + (Math.random() * 2 - 1) * jitter;
+                const fy = center.y + (Math.random() * 2 - 1) * jitter;
+
+                let tooClose = false;
+                for (const f of state.foodDots) {
+                    if (dist(f.x, f.y, fx, fy) < state.agentRadius * 1.8) { tooClose = true; break; }
+                }
+                if (!tooClose) {
+                    state.foodDots.push({ x: fx, y: fy, r: Math.max(3, state.agentRadius * 0.34), eaten: false });
+                    foodUsed.add(key);
+                }
+                tries++;
+            }
+
+            updateHUD();
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = randInt(0, i);
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        function circleRectCollision(cx, cy, r, rect) {
+            const nearestX = clamp(cx, rect.x, rect.x + rect.w);
+            const nearestY = clamp(cy, rect.y, rect.y + rect.h);
+            const dx = cx - nearestX;
+            const dy = cy - nearestY;
+            return dx * dx + dy * dy < r * r;
+        }
+
+        function collidesAnyWall(x, y, r) {
+            for (const rect of state.wallRects) {
+                if (circleRectCollision(x, y, r, rect)) return true;
+            }
+            return false;
+        }
+
+        function moveWithCollision(agent, dx, dy) {
+            let moved = false;
+
+            if (dx !== 0) {
+                const nx = agent.x + dx;
+                if (!collidesAnyWall(nx, agent.y, agent.r)) {
+                    agent.x = nx;
+                    moved = true;
+                } else {
+                    const step = Math.sign(dx);
+                    for (let i = 0; i < Math.abs(dx); i++) {
+                        const tx = agent.x + step;
+                        if (!collidesAnyWall(tx, agent.y, agent.r)) {
+                            agent.x = tx;
+                            moved = true;
+                        } else break;
+                    }
+                }
+            }
+
+            if (dy !== 0) {
+                const ny = agent.y + dy;
+                if (!collidesAnyWall(agent.x, ny, agent.r)) {
+                    agent.y = ny;
+                    moved = true;
+                } else {
+                    const step = Math.sign(dy);
+                    for (let i = 0; i < Math.abs(dy); i++) {
+                        const ty = agent.y + step;
+                        if (!collidesAnyWall(agent.x, ty, agent.r)) {
+                            agent.y = ty;
+                            moved = true;
+                        } else break;
+                    }
+                }
+            }
+
+            return moved;
+        }
+
+        function eatFood() {
+            for (const f of state.foodDots) {
+                if (!f.eaten && dist(state.green.x, state.green.y, f.x, f.y) <= state.green.r + f.r + 1) {
+                    f.eaten = true;
+                    state.collected++;
+                }
+            }
+            updateHUD();
+        }
+
+        function randomStepDirs(step) {
+            return [
+                { key: 'right', dx: step, dy: 0, opp: 'left' },
+                { key: 'left', dx: -step, dy: 0, opp: 'right' },
+                { key: 'down', dx: 0, dy: step, opp: 'up' },
+                { key: 'up', dx: 0, dy: -step, opp: 'down' }
+            ];
+        }
+
+        function getPartialRandomVector(blue, step) {
+            const allDirs = randomStepDirs(step);
+            const passable = allDirs.filter(d => !collidesAnyWall(blue.x + d.dx, blue.y + d.dy, blue.r));
+            let pool = passable.length ? passable : allDirs;
+
+            if (blue.randomDirHold <= 0 || !blue.randomDir) {
+                if (blue.randomDir) {
+                    const noReverse = pool.filter(d => d.key !== blue.randomDir.opp);
+                    if (noReverse.length) pool = noReverse;
+                }
+                blue.randomDir = choice(pool);
+                blue.randomDirHold = randInt(3, 6);
+            } else {
+                blue.randomDirHold--;
+                const stillPassable = pool.some(d => d.key === blue.randomDir.key);
+                if (!stillPassable) {
+                    if (blue.randomDir) {
+                        const noReverse = pool.filter(d => d.key !== blue.randomDir.opp);
+                        if (noReverse.length) pool = noReverse;
+                    }
+                    blue.randomDir = choice(pool);
+                    blue.randomDirHold = randInt(2, 4);
+                }
+            }
+
+            return { dx: blue.randomDir.dx, dy: blue.randomDir.dy };
+        }
+
+        function handleKey(dir) {
+            let dx = 0, dy = 0;
+            const step = state.stepPx;
+
+            if (dir === 'ArrowUp') dy = -step;
+            else if (dir === 'ArrowDown') dy = step;
+            else if (dir === 'ArrowLeft') dx = -step;
+            else if (dir === 'ArrowRight') dx = step;
+            else return;
+
+            moveWithCollision(state.green, dx, dy);
+            eatFood();
+
+            const now = performance.now();
+
+            for (const blue of state.blues) {
+                let bdx = dx, bdy = dy;
+                if (blue.mode === 'opposite') {
+                    bdx = -dx; bdy = -dy;
+                } else if (blue.mode === 'partial') {
+                    const frac = clamp(state.partialControlPct / 100, 0, 1);
+                    const randomVec = getPartialRandomVector(blue, step);
+                    bdx = Math.round(dx * frac + randomVec.dx * (1 - frac));
+                    bdy = Math.round(dy * frac + randomVec.dy * (1 - frac));
+                }
+
+                if (blue.mode === 'delay') {
+                    blue.pending.push({ when: now + state.delayMs, dx: bdx, dy: bdy });
+                } else {
+                    moveWithCollision(blue, bdx, bdy);
+                }
+            }
+
+        }
+
+        function updateBluePending(now) {
+            for (const blue of state.blues) {
+                if (!blue.pending.length) continue;
+                const due = [];
+                const keep = [];
+                for (const p of blue.pending) {
+                    if (p.when <= now) due.push(p);
+                    else keep.push(p);
+                }
+                blue.pending = keep;
+                for (const p of due) {
+                    moveWithCollision(blue, p.dx, p.dy);
+                }
+            }
+        }
+
+        function updateHUD() {
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            const s = state.renderScale || 1;
+            ctx.scale(s, s);
+
+            ctx.fillStyle = COLORS.bg;
+            ctx.fillRect(0, 0, state.drawW, state.drawH);
+
+            drawGridHint();
+            drawFoods();
+            drawWalls();
+            drawAgents();
+
+            ctx.restore();
+            requestAnimationFrame(loop);
+        }
+
+        function drawGridHint() {
+            ctx.save();
+            ctx.strokeStyle = COLORS.gridSoft;
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= state.cols; x++) {
+                const px = x * state.cellSize + state.wallThickness / 2;
+                ctx.beginPath();
+                ctx.moveTo(px, 0);
+                ctx.lineTo(px, state.drawH);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= state.rows; y++) {
+                const py = y * state.cellSize + state.wallThickness / 2;
+                ctx.beginPath();
+                ctx.moveTo(0, py);
+                ctx.lineTo(state.drawW, py);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawWalls() {
+            ctx.save();
+            ctx.fillStyle = COLORS.wall;
+            for (const r of state.wallRects) {
+                ctx.fillRect(r.x, r.y, r.w, r.h);
+            }
+            ctx.restore();
+        }
+
+        function drawFoods() {
+            for (const f of state.foodDots) {
+                if (f.eaten) continue;
+                ctx.save();
+                ctx.fillStyle = COLORS.food;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function drawAgents() {
+            for (const blue of state.blues) {
+                drawCircleAgent(blue.x, blue.y, blue.r, COLORS.blue, COLORS.blueEdge);
+            }
+            drawCircleAgent(state.green.x, state.green.y, state.green.r, COLORS.green, COLORS.greenEdge);
+        }
+
+        function drawCircleAgent(x, y, r, fill, stroke) {
+            ctx.save();
+            ctx.fillStyle = fill;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = stroke;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function loop(ts) {
+            updateBluePending(ts);
+            draw();
+        }
+
+        function rebuildMazeAndReset() {
+            syncValues();
+            generateMaze();
+            resetAgentsAndFoods();
+            updateHUD();
+        }
+
+        function resetOnly() {
+            syncValues();
+            resetAgentsAndFoods();
+            updateHUD();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                handleKey(e.key);
+            }
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+            syncValues();
+        });
+
+        [
+            els.cols, els.rows, els.cellSize,
+            els.openness, els.delayMs, els.spawnDistance, els.stepPx,
+            els.foodCount, els.consistentCount, els.delayCount, els.oppositeCount,
+            els.partialCount, els.partialControlPct
+        ].forEach(el => {
+            el.addEventListener('input', () => {
+                syncValues();
+            });
+            el.addEventListener('change', () => {
+                syncValues();
+            });
+        });
+
+        els.regenBtn.addEventListener('click', rebuildMazeAndReset);
+        els.resetBtn.addEventListener('click', resetOnly);
+
+        syncValues();
+        generateMaze();
+        resetAgentsAndFoods();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+
+</html>
